@@ -1,35 +1,42 @@
 const { Client, GatewayIntentBits } = require('discord.js');
-const dgram = require('dgram');
+const Rcon = require('samp-rcon');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const client = new Client({ 
+    intents: [
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.GuildMessages, 
+        GatewayIntentBits.MessageContent
+    ] 
+});
 
-const HOST = '51.38.218.165';
-const PORT = 7777;
-const RCON_PASSWORD = '123';
-
-function sendRcon(command) {
-    const client_socket = dgram.createSocket('udp4');
-    // SA-MP RCON protokol zaglavlje
-    const packet = Buffer.concat([
-        Buffer.from('SAMP'),
-        Buffer.from(HOST.split('.').map(Number)),
-        Buffer.from([PORT & 0xFF, (PORT >> 8) & 0xFF]),
-        Buffer.from('x'), // RCON komanda
-        Buffer.from([RCON_PASSWORD.length & 0xFF, (RCON_PASSWORD.length >> 8) & 0xFF]),
-        Buffer.from(RCON_PASSWORD),
-        Buffer.from([command.length & 0xFF, (command.length >> 8) & 0xFF]),
-        Buffer.from(command)
-    ]);
-
-    client_socket.send(packet, 0, packet.length, PORT, HOST);
-    client_socket.close();
-}
+const config = {
+    host: '51.38.218.165',
+    port: 7777,
+    password: '123'
+};
 
 client.on('messageCreate', (message) => {
+    // Sprečavamo bota da odgovara sam sebi
+    if (message.author.bot) return;
+
     if (message.content.startsWith('!ban ')) {
         const playerName = message.content.split(' ')[1];
-        sendRcon(`ban ${playerName}`);
-        message.reply(`Poslata komanda za banovanje igrača: ${playerName}`);
+        
+        if (!playerName) {
+            return message.reply("Moraš uneti ime igrača! Primer: !ban Ime_Prezime");
+        }
+
+        const rcon = new Rcon(config);
+        
+        rcon.execute(`ban ${playerName}`, (err, res) => {
+            if (err) {
+                console.error("RCON Error:", err);
+                message.reply("Greška pri povezivanju sa serverom. Proveri RCON šifru!");
+            } else {
+                message.reply(`Komanda za banovanje je poslata za: ${playerName}`);
+            }
+        });
     }
 });
+
 client.login(process.env.DISCORD_TOKEN);
