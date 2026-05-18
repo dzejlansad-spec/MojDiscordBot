@@ -6,7 +6,7 @@ const client = new Client({
 });
 
 const HOST = '51.38.218.165';
-const PORT = 7777;
+const PORT = 7700;
 const RCON_PASSWORD = '123';
 
 client.on('messageCreate', (message) => {
