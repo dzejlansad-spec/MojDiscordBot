@@ -12,14 +12,18 @@ const RCON_PASSWORD = '123';
 client.on('messageCreate', (message) => {
     if (message.author.bot) return;
 
+    // Menjamo komandu da prima ID umesto imena
     if (message.content.startsWith('!ban ')) {
-        const playerName = message.content.split(' ')[1];
-        if (!playerName) return message.reply("Unesi ime!");
+        const playerID = message.content.split(' ')[1];
+        
+        if (!playerID) return message.reply("Moras uneti ID igraca! Primer: !ban 2");
+        if (isNaN(playerID)) return message.reply("ID mora biti broj!");
 
         const client_socket = dgram.createSocket('udp4');
-        const command = `ban ${playerName}`;
         
-        // Formiranje RCON paketa
+        // Ovde saljemo tacno "ban [ID]" sto tvoj server sad ocekuje
+        const command = `ban ${playerID}`;
+        
         const packet = Buffer.concat([
             Buffer.from('SAMP'),
             Buffer.from(HOST.split('.').map(Number)),
@@ -34,7 +38,7 @@ client.on('messageCreate', (message) => {
         client_socket.send(packet, 0, packet.length, PORT, HOST);
         client_socket.close();
         
-        message.reply(`Pokušavam banovanje: ${playerName}`);
+        message.reply(`Poslata RCON komanda za ban ID-a: ${playerID}`);
     }
 });
 
